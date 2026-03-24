@@ -34,3 +34,49 @@ ATWX\BlogExtensions\BlogExtensionSettings:
   enable_blog_modeladmin: true       # Aktiviert Blog ModelAdmin im CMS
   enable_expiredates: true           # Fügt Ablaufdatum-Felder zu BlogPosts hinzu
   enable_category_dropdown: true     # Zeigt Kategorien als Dropdown in BlogPost-Formular an
+  enable_fluent_support: true        # Aktiviert Fluent-Integration (wenn Modul installiert)
+  enable_versioned_support: true     # Aktiviert Versioned-Integration (wenn Modul installiert)
+  fluent_translatable_fields:        # Felder die übersetzt werden sollen
+    - 'Title'
+    - 'Content'
+    - 'Summary'
+    - 'MetaDescription'
+    - 'URLSegment'
+  fluent_excluded_fields:            # Felder die NICHT übersetzt werden sollen
+    - 'PublishDate'
+    - 'ExpireDate'
+    - 'FeaturedImageID'
+    - 'ParentID'
+
+---
+Name: blogextensions-fluent
+Only:
+  moduleexists: 'tractorcow/silverstripe-fluent'
+After:
+  - '#blogextensions'
+  - '#fluent'
+---
+# Fluent Lokalisierung für BlogPost
+# Macht Titel, Content, Summary und Meta-Felder übersetzbar
+# Wird nur aktiviert wenn enable_fluent_support = true in ATWX\BlogExtensions\BlogExtensionSettings
+SilverStripe\Blog\Model\BlogPost:
+  extensions:
+    - TractorCow\Fluent\Extension\FluentExtension
+
+# Die übersetzten Felder können in BlogExtensionSettings konfiguriert werden
+# Standard-Felder siehe: fluent_translatable_fields und fluent_excluded_fields
+
+---
+Name: blogextensions-versioned
+Only:
+  moduleexists: 'silverstripe/versioned'
+After:
+  - '#blogextensions'
+---
+# Versioned für BlogPost (falls nicht bereits vom Blog-Modul aktiviert)
+# Das Blog-Modul hat normalerweise bereits Versioned,
+# aber für den Fall dass es manuell deaktiviert wurde
+SilverStripe\Blog\Model\BlogPost:
+  extensions:
+    - SilverStripe\Versioned\Versioned('Stage', 'Live')
+  versioned_gridfield_extensions: true

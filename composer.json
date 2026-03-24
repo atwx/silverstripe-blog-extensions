@@ -13,8 +13,11 @@
         "silverstripe/blog": "^5.0",
         "symbiote/silverstripe-gridfieldextensions": "^5.1",
         "colymba/gridfield-bulk-editing-tools": "^5.1",
-        "silverstripe/versioned": "^3.1",
         "lekoala/silverstripe-cms-actions": "^2.0"
+    },
+    "suggest": {
+        "tractorcow/silverstripe-fluent": "^7.0 - Enables multi-language support for BlogPosts",
+        "silverstripe/versioned": "^3.1 - Enables draft/published versioning for BlogPosts (usually part of framework)"
     },
     "autoload": {
         "psr-4": {

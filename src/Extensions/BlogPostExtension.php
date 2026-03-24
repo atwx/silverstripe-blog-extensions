@@ -13,6 +13,8 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Security\Permission;
+use SilverStripe\Core\ClassInfo;
+use TractorCow\Fluent\State\FluentState;
 
 /**
  * Example extension for BlogPost
@@ -221,7 +223,7 @@ class BlogPostExtension extends Extension
                 $previewLink = $this->owner->AbsoluteLink();
 
                 //add stage parameter to preview link if the owner is not published yet
-                if (!$this->owner->isPublished()) {
+                if ($this->hasVersionedSupport() && !$this->owner->isPublished()) {
                     $previewLink = Controller::join_links($previewLink, '?stage=Stage');
                 }
                 
@@ -235,6 +237,57 @@ class BlogPostExtension extends Extension
                     $actions->push($previewButton);
                 }
             }
+        }
+    }
+
+    /**
+     * Prüft ob Fluent installiert und aktiviert ist
+     * 
+     * @return bool
+     */
+    public function hasFluentSupport()
+    {
+        return class_exists('TractorCow\Fluent\Extension\FluentExtension') 
+            && $this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension');
+    }
+
+    /**
+     * Prüft ob Versioned installiert und aktiviert ist
+     * 
+     * @return bool
+     */
+    public function hasVersionedSupport()
+    {
+        return class_exists('SilverStripe\Versioned\Versioned') 
+            && $this->owner->hasExtension('SilverStripe\Versioned\Versioned');
+    }
+
+    /**
+     * Gibt die aktuelle Fluent Locale zurück (falls Fluent aktiv)
+     * 
+     * @return string|null
+     */
+    public function getCurrentLocale()
+    {
+        if (!$this->hasFluentSupport()) {
+            return null;
+        }
+
+        if (class_exists('TractorCow\Fluent\State\FluentState')) {
+            return FluentState::singleton()->getLocale();
+        }
+
+        return null;
+    }
+
+    /**
+     * Beispiel: Fügt Fluent-Locale-Info zum Summary Field in der GridField hinzu
+     */
+    public function updateGridFieldColumns(&$columns)
+    {
+        if ($this->hasFluentSupport() && isset($columns['Title'])) {
+            // Du könntest hier die Locale-Info hinzufügen
+            // z.B. $columns['LocaleInfo'] = 'Sprache';
         }
     }
 }
