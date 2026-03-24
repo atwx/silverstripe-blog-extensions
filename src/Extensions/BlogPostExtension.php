@@ -2,6 +2,9 @@
 
 namespace ATWX\BlogExtensions\Extensions;
 
+use ATWX\BlogExtensions\BlogExtensionSettings;
+use LeKoala\CmsActions\CustomAction;
+use LeKoala\CmsActions\CustomLink;
 use SilverStripe\Blog\Model\Blog;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Extension;
@@ -21,23 +24,29 @@ class BlogPostExtension extends Extension
 {
     private static $db = [
         "ExpireDate" => "Datetime",
-    ];
+    ];    
 
     /**
      * Update CMS fields
      */
     public function updateCMSFields(FieldList $fields)
     {
-        $expireDateField = DatetimeField::create('ExpireDate', 'Ablaufdatum')
-            ->setDescription('Optional: Beitrag wird nach diesem Datum nicht mehr angezeigt');
-        
-        $fields->insertAfter('PublishDate', $expireDateField);
+        if (BlogExtensionSettings::config()->get('enable_expiredates')) {
+            // Add ExpireDate field if the setting is enabled
+            $expireDateField = DatetimeField::create('ExpireDate', 'Ablaufdatum')
+                ->setDescription('Optional: Beitrag wird nach diesem Datum nicht mehr angezeigt');
+            
+            $fields->insertAfter('PublishDate', $expireDateField);
+        }
         
         $categoriesField = $fields->dataFieldByName('Categories');
         if ($categoriesField && method_exists($categoriesField, 'setCanCreate')) {
             $categoriesField->setCanCreate(true);
-            if (method_exists($categoriesField, 'setShouldLazyLoad')) {
-                $categoriesField->setShouldLazyLoad(false);
+            if (BlogExtensionSettings::config()->get('enable_category_dropdown')) {
+                if (method_exists($categoriesField, 'setShouldLazyLoad')) {
+                    // Deaktiviert Lazy Loading, damit die Kategorien im Dropdown erscheinen
+                    $categoriesField->setShouldLazyLoad(false);
+                }
             }
         }
         
@@ -114,29 +123,38 @@ class BlogPostExtension extends Extension
             return;
         }
         
-        $expireDate = $this->owner->dbObject('ExpireDate');
-        
-        if ($expireDate->exists() && $expireDate->InPast()) {
-            $result = false;
+        // Prüfe ExpireDate, wenn das Feature aktiviert ist
+        if (BlogExtensionSettings::config()->get('enable_expiredates')) {
+            $expireDate = $this->owner->dbObject('ExpireDate');
+            
+            if ($expireDate->exists() && $expireDate->InPast()) {
+                $result = false;
+            }
         }
     }
 
     //Change Summary fields to include Publishdate and Author
      public function updateSummaryFields(&$fields)
     {
-        $fields['Author.Name'] = 'Author';
-        $fields['PublishDate.Nice'] = 'Publish Date';
+        if (BlogExtensionSettings::config()->get('overhauled_summary_fields')) {
+            unset($fields['Title']);
+            $fields['FeaturedImage.CMSThumbnail'] = 'Featured Image';
+            $fields['Title'] = 'Title';
+            $fields['RenderAuthors'] = 'Authors';
+            $fields['PublishDate.Nice'] = 'Publish Date';
+        }
     }
 
-    /**
-     * Erweitere canCreateCategories um ModelAdmin-Support
-     * 
-     * Erlaubt das Erstellen neuer Kategorien auch wenn kein Parent Blog existiert
-     * (z.B. im ModelAdmin)
-     * 
-     * @param bool|null $result
-     * @param \SilverStripe\Security\Member|null $member
-     */
+    // Render method to show authors in the summary field
+    public function RenderAuthors()
+    {
+        $authors = $this->owner->getCredits();
+        $authorNames = $authors->map('ID', 'Name')->toArray();
+        return implode(', ', $authorNames);
+    }
+
+    
+    //Makes sure that blog duplication works properly, even in the modeladmin
     public function updateCanCreateCategories(&$result, $member = null)
     {
         if ($result === true) {
@@ -156,17 +174,9 @@ class BlogPostExtension extends Extension
         }
     }
 
-    /**
-     * Erweitere canCreateTags um ModelAdmin-Support
-     * 
-     * Erlaubt das Erstellen neuer Tags auch wenn kein Parent Blog existiert
-     * (z.B. im ModelAdmin)
-     * 
-     * @param bool|null $result
-     * @param \SilverStripe\Security\Member|null $member
-     */
     public function updateCanCreateTags(&$result, $member = null)
     {
+        
         if ($result === true) {
             return;
         }
@@ -184,11 +194,9 @@ class BlogPostExtension extends Extension
         }
     }
 
-    /**
-     * Stelle sicher, dass jeder BlogPost einen Parent hat
-     */
     public function onBeforeWrite()
-    {
+    {        
+        // Makes sure that the BlogPost always has a prent. Even if created with ModelAdmin
         if (!$this->owner->ParentID) {
             $firstBlog = Blog::get()->first();
             if ($firstBlog) {
@@ -197,55 +205,35 @@ class BlogPostExtension extends Extension
         }
     }
 
-    /**
-     * Example method to extend functionality
-     */
-    public function getCustomSummary()
-    {
-        return $this->owner->getSummary();
-    }
-
-    /**
-     * Deaktiviert die Split-Screen-Vorschau im CMS
-     * 
-     * @param string $link
-     * @param string $action
-     */
     public function updatePreviewLink(&$link, $action)
     {
-        $link = null;
+        // Deactivates the splitview editing
+        if (BlogExtensionSettings::config()->get('disable_splitview_editing')) {
+            $link = null;
+        }
     }
 
-    /**
-     * Fügt einen Vorschau-Button zur CMS Action-Bar hinzu
-     * 
-     * @param FieldList $actions
-     */
     public function updateCMSActions(FieldList $actions)
-    {        
-        if ($actions && $this->owner->exists()) {
-            // Erstelle einen Link zur Vorschau-Seite
-            $previewLink = $this->owner->AbsoluteLink();
-            
-            if ($previewLink) {
-                // Erstelle einen HTML-Link als Button
-                $previewButton = LiteralField::create(
-                    'PreviewButton',
-                    sprintf(
-                        '<a href="%s" class="btn btn-outline-secondary font-icon-eye" target="_blank" rel="noopener noreferrer">Vorschau</a>',
-                        $previewLink
-                    )
-                );
+    {
+        // Enable a preview button if the setting is enabled and the record exists
+        if (BlogExtensionSettings::config()->get('enable_preview_button')) {
+            if ($actions && $this->owner->exists()) {
+                $previewLink = $this->owner->AbsoluteLink();
+
+                //add stage parameter to preview link if the owner is not published yet
+                if (!$this->owner->isPublished()) {
+                    $previewLink = Controller::join_links($previewLink, '?stage=Stage');
+                }
                 
-                // Füge den Button zu den Actions hinzu
-                $actions->push($previewButton);
-            } else {
-                // Fallback: Wenn kein Link generiert werden kann, zeige eine Fehlermeldung
-                $errorButton = LiteralField::create(
-                    'PreviewError',
-                    '<span class="btn btn-outline-secondary font-icon-eye disabled" title="Vorschau nicht verfügbar">Vorschau</span>'
-                );
-                $actions->push($errorButton);
+                if ($previewLink) {
+                    // Create custom link button for preview
+                    $previewButton = CustomLink::create('Preview', 'Vorschau', $previewLink)
+                        ->setNewWindow(true)
+                        ->setButtonIcon('eye')
+                        ->setNoAjax(true);
+                    
+                    $actions->push($previewButton);
+                }
             }
         }
     }

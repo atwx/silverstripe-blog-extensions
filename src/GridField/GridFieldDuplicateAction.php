@@ -158,20 +158,37 @@ class GridFieldDuplicateAction extends AbstractGridFieldComponent implements
             );
         }
 
-        // Dupliziere das DataObject
-        $duplicate = $item->duplicate(true); // true = mit Relationen duplizieren
+        // Speichere die Categories und Tags vor dem Duplizieren
+        $originalCategories = $item->Categories()->column('ID');
+        $originalTags = $item->Tags()->column('ID');
+
+        // Dupliziere das DataObject (ohne Relationen, wir machen das manuell)
+        $duplicate = $item->duplicate(false);
         
         // Setze PublishDate auf null, damit der duplizierte Beitrag als Entwurf erscheint
         if ($duplicate->hasField('PublishDate')) {
             $duplicate->PublishDate = null;
-            $duplicate->write();
         }
 
-        // Optional: Füge " (Kopie)" zum Titel hinzu
+        // Füge " (Kopie)" zum Titel hinzu
         if ($duplicate->hasField('Title')) {
             $duplicate->Title = $duplicate->Title . ' (Kopie)';
-            $duplicate->write();
         }
+        
+        // Speichere zuerst, damit wir eine ID haben
+        $duplicate->write();
+        
+        // Verknüpfe Categories und Tags manuell
+        if (!empty($originalCategories)) {
+            $duplicate->Categories()->setByIDList($originalCategories);
+        }
+        
+        if (!empty($originalTags)) {
+            $duplicate->Tags()->setByIDList($originalTags);
+        }
+        
+        // Trigger onAfterWrite, damit Categories/Tags mit dem richtigen Blog verknüpft werden
+        $duplicate->write();
     }
 
     /**

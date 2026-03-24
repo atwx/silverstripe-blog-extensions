@@ -2,6 +2,7 @@
 Name: blogextensions
 After:
   - '#blog'
+  - 'cms-actions'
 ---
 # Add your configuration here
 # Example:
@@ -12,3 +13,24 @@ After:
 SilverStripe\Blog\Model\BlogPost:
   extensions:
     - ATWX\BlogExtensions\Extensions\BlogPostExtension
+
+SilverStripe\Admin\LeftAndMain:
+  extra_requirements_js:
+    - "https://cdn.jsdelivr.net/npm/last-icon@2/last-icon.min.js"
+
+# CMS Actions Konfiguration
+LeKoala\CmsActions\ActionsGridFieldItemRequest:
+  enable_save_prev_next: false    # Aktiviert Save+Prev/Next Buttons
+  enable_save_close: false         # Aktiviert Save+Close Button
+  enable_delete_right: false       # Zeigt Delete-Button rechts an
+  enable_custom_prevnext: true    # Aktiviert Custom Prev/Next Navigation
+
+
+# Basic Settings for the Silverstripe Blog Extensions Module
+ATWX\BlogExtensions\BlogExtensionSettings:
+  overhauled_summary_fields: true    # Zeigt überarbeitete Summary-Felder (Featured Image, Authors, PublishDate)
+  enable_preview_button: true        # Zeigt Vorschau-Button in der Action-Bar
+  disable_splitview_editing: false   # Deaktiviert Split-View Bearbeitung (nur Editieren in Detailansicht)
+  enable_blog_modeladmin: true       # Aktiviert Blog ModelAdmin im CMS
+  enable_expiredates: true           # Fügt Ablaufdatum-Felder zu BlogPosts hinzu
+  enable_category_dropdown: true     # Zeigt Kategorien als Dropdown in BlogPost-Formular an
