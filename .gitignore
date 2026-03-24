@@ -1,0 +1,20 @@
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Composer
+vendor/
+composer.lock
+
+# Build artifacts
+node_modules/
+client/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# SilverStripe cache
+.graphql-generated/

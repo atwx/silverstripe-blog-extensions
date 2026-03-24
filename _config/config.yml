@@ -1,0 +1,10 @@
+---
+Name: blogextensions
+After:
+  - '#blog'
+---
+# Add your configuration here
+# Example:
+# SilverStripe\Blog\Model\BlogPost:
+#   extensions:
+#     - Steff\BlogExtensions\Extensions\BlogPostExtension
