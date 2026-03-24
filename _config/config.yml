@@ -8,3 +8,7 @@ After:
 # SilverStripe\Blog\Model\BlogPost:
 #   extensions:
 #     - Steff\BlogExtensions\Extensions\BlogPostExtension
+
+SilverStripe\Blog\Model\BlogPost:
+  extensions:
+    - ATWX\BlogExtensions\Extensions\BlogPostExtension
