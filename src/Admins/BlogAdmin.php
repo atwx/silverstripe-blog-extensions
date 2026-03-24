@@ -2,6 +2,7 @@
 
 namespace ATWX\BlogExtensions\Admins;
 
+use ATWX\BlogExtensions\GridField\GridFieldDuplicateAction;
 use Colymba\BulkManager\BulkManager;
 use SilverStripe\Admin\ModelAdmin;
 use SilverStripe\Blog\Model\BlogPost;
@@ -23,7 +24,13 @@ class BlogAdmin extends ModelAdmin
     {        $form = parent::getEditForm($id, $fields);
         $gridField = $form->Fields()->fieldByName($this->sanitiseClassName(BlogPost::class));
         if ($gridField) {
-            $gridField->getConfig()->addComponent(new BulkManager());
+            $config = $gridField->getConfig();
+            
+            // Füge BulkManager hinzu
+            $config->addComponent(new BulkManager());
+            
+            // Füge Duplizieren-Aktion hinzu
+            $config->addComponent(new GridFieldDuplicateAction());
         }
         return $form;
     }
